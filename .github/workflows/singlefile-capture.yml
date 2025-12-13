@@ -30,17 +30,15 @@ jobs:
           working-directory: .
           run: |
             docker build -t singlefile -f ./single-file-cli.Dockerfile .
-            
-        - name: Create output directory
-          run: mkdir -p output
         
         - name: Capture webpage with SingleFile
           run: |
-            docker run -v "${{ github.workspace }}/output:/output" singlefile "${{ github.event.inputs.url }}" > "/output/${{ github.event.inputs.output_filename }}"
+            mkdir -p ./output
+            docker run singlefile "${{ github.event.inputs.url }}" > "./output/${{ github.event.inputs.output_filename }}"
 
         - name: Upload captured webpage as artifact
           uses: actions/upload-artifact@v6
           with:
               name: captured-webpage
-              path: output/${{ github.event.inputs.output_filename }}
+              path: ./output/${{ github.event.inputs.output_filename }}
               retention-days: 30
