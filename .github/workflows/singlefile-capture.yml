@@ -27,7 +27,7 @@ jobs:
           uses: docker/setup-buildx-action@v3
         
         - name: Build SingleFile Docker image
-          working-directory: rnd--browser-plugin-singlefile/cli-tool/single-file-cli
+          working-directory: .
           run: |
             docker build -t singlefile -f ./single-file-cli.Dockerfile .
             
