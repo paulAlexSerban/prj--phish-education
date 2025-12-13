@@ -29,7 +29,7 @@ jobs:
         - name: Build SingleFile Docker image
           working-directory: rnd--browser-plugin-singlefile/cli-tool/single-file-cli
           run: |
-            docker build -t singlefile -f single-file-cli.Dockerfile .
+            docker build -t singlefile -f ./single-file-cli.Dockerfile .
             
         # - name: Create output directory
         # run: mkdir -p output
