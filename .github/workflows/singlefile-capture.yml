@@ -7,6 +7,9 @@ on:
       - main
     paths:
       - 'rnd--browser-plugin-singlefile/cli-tool/single-file-cli/**'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   capture-webpage:
