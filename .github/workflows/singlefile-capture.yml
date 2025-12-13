@@ -23,34 +23,34 @@ jobs:
         - name: Checkout repository
           uses: actions/checkout@v4
             
-            # - name: Set up Docker Buildx
-            # uses: docker/setup-buildx-action@v3
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v3
+        
+        - name: Build SingleFile Docker image
+          working-directory: rnd--browser-plugin-singlefile/cli-tool/single-file-cli
+          run: |
+            docker build -t singlefile -f single-file-cli.Dockerfile .
             
-            # - name: Build SingleFile Docker image
-            # working-directory: rnd--browser-plugin-singlefile/cli-tool/single-file-cli
-            # run: |
-            #     docker build -t singlefile .
-            
-            # - name: Create output directory
-            # run: mkdir -p output
-            
-            # - name: Capture webpage with SingleFile
-            # run: |
-            #     docker run --rm \
-            #     -v "$(pwd)/output:/usr/src/app/out" \
-            #     singlefile \
-            #     https://roadmap.sh/ai-engineer
-            
-            # - name: Rename output file
-            # run: |
-            #     # Find the generated file and rename it
-            #     if [ -f output/*.html ]; then
-            #     mv output/*.html output/roadmap-ai-eng.html
-            #     fi
-            
-            # - name: Upload captured webpage as artifact
-            # uses: actions/upload-artifact@v4
-            # with:
-            #     name: captured-webpage
-            #     path: output/roadmap-ai-eng.html
-            # retention-days: 30
+        # - name: Create output directory
+        # run: mkdir -p output
+        
+        # - name: Capture webpage with SingleFile
+        # run: |
+        #     docker run --rm \
+        #     -v "$(pwd)/output:/usr/src/app/out" \
+        #     singlefile \
+        #     https://roadmap.sh/ai-engineer
+        
+        # - name: Rename output file
+        # run: |
+        #     # Find the generated file and rename it
+        #     if [ -f output/*.html ]; then
+        #     mv output/*.html output/roadmap-ai-eng.html
+        #     fi
+        
+        # - name: Upload captured webpage as artifact
+        # uses: actions/upload-artifact@v4
+        # with:
+        #     name: captured-webpage
+        #     path: output/roadmap-ai-eng.html
+        # retention-days: 30
