@@ -36,7 +36,7 @@ jobs:
         
         - name: Capture webpage with SingleFile
           run: |
-            docker run singlefile "${{ github.event.inputs.url }}" > "/output/${{ github.event.inputs.output_filename }}"
+            docker run -v "${{ github.workspace }}/output:/output" singlefile "${{ github.event.inputs.url }}" > "/output/${{ github.event.inputs.output_filename }}"
 
         - name: Upload captured webpage as artifact
           uses: actions/upload-artifact@v6
