@@ -31,26 +31,16 @@ jobs:
           run: |
             docker build -t singlefile -f ./single-file-cli.Dockerfile .
             
-        # - name: Create output directory
-        # run: mkdir -p output
+        - name: Create output directory
+          run: mkdir -p output
         
-        # - name: Capture webpage with SingleFile
-        # run: |
-        #     docker run --rm \
-        #     -v "$(pwd)/output:/usr/src/app/out" \
-        #     singlefile \
-        #     https://roadmap.sh/ai-engineer
+        - name: Capture webpage with SingleFile
+          run: |
+            docker run singlefile "${{ github.event.inputs.url }} > "/output/${{ github.event.inputs.output_filename }}"
         
-        # - name: Rename output file
-        # run: |
-        #     # Find the generated file and rename it
-        #     if [ -f output/*.html ]; then
-        #     mv output/*.html output/roadmap-ai-eng.html
-        #     fi
-        
-        # - name: Upload captured webpage as artifact
-        # uses: actions/upload-artifact@v4
-        # with:
-        #     name: captured-webpage
-        #     path: output/roadmap-ai-eng.html
-        # retention-days: 30
+        - name: Upload captured webpage as artifact
+          uses: actions/upload-artifact@v6
+          with:
+              name: captured-webpage
+              path: output/${{ github.event.inputs.output_filename }}
+              retention-days: 30
