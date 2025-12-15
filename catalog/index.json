@@ -1,6 +1,15 @@
 [
     {
         "year": 2025,
+        "url": "https://scoala-ski-snowboard.ro",
+        "domain": "scoala-ski-snowboard.ro",
+        "filename": "scoala-ski-snowboard",
+        "description": "Phishing page captured from scoala-ski-snowboard.ro",
+        "capturedAt": "2025-12-15T21:08:24Z",
+        "path": "2025/scoala-ski-snowboard/index.html"
+    },
+    {
+        "year": 2025,
         "url": "https://example.com",
         "domain": "example.com",
         "filename": "example",
