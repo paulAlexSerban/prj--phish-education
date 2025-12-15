@@ -361,7 +361,7 @@ def main():
     # Paths
     script_dir = Path(__file__).parent.parent
     json_path = script_dir / 'catalog' / 'index.json'
-    output_path = script_dir / 'catalog' / 'catalog.html'
+    output_path = script_dir / 'catalog' / 'index.html'
     
     print(f"Reading catalog data from: {json_path}")
     catalog_data = read_catalog_data(json_path)
