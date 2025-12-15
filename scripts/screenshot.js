@@ -8,7 +8,7 @@ async function takeScreenshot() {
     process.exit(1);
   }
 
-  const url = args[0];
+  let url = args[0];
   const outputPath = args[1];
 
   // Add protocol if missing
