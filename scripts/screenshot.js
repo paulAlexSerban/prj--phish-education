@@ -11,6 +11,12 @@ async function takeScreenshot() {
   const url = args[0];
   const outputPath = args[1];
 
+  // Add protocol if missing
+  if (!url.match(/^https?:\/\//i)) {
+    url = 'https://' + url;
+    console.log(`Protocol not found, using: ${url}`);
+  }
+
   console.log(`Taking screenshot of: ${url}`);
   console.log(`Output: ${outputPath}`);
 
