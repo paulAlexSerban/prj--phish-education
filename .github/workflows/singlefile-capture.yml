@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: captured-webpage
-          path: ./catalog/${{ github.event.inputs.output_filename }}
+          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
           retention-days: 30
 
   capture-screenshot:
@@ -79,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: captured-screenshot
-          path: ./catalog/${{ github.event.inputs.output_filename }}
+          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
           retention-days: 30
 
   # fetch uploaded artifacts and unzip them and commit to repo
@@ -96,13 +96,20 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: captured-webpage
-          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
+          path: ./temp-webpage
           
       - name: Download captured screenshot artifact
         uses: actions/download-artifact@v7
         with:
           name: captured-screenshot
-          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
+          path: ./temp-screenshot
+
+      - name: Move artifacts to catalog directory
+        run: |
+          YEAR=$(date +%Y)
+          mkdir -p ./catalog/$YEAR/${{ github.event.inputs.output_filename }}
+          mv ./temp-webpage/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
+          mv ./temp-screenshot/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
 
       - name: Extract domain from URL
         id: extract_domain
