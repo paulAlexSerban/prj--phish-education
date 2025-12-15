@@ -36,17 +36,21 @@ jobs:
         run: |
           docker build -t singlefile -f ./single-file-cli.Dockerfile .
 
+      - name: Set year variable
+        id: set_year
+        run: echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
+
       - name: Capture webpage HTML, CSS & JS with SingleFile
         run: |
           # create dir in catalog/date/output_filename
-          mkdir -p ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
-          docker run singlefile --browser-ignore-insecure-certs "${{ github.event.inputs.url }}" > "./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}/index.html"
+          mkdir -p ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
+          docker run singlefile --browser-ignore-insecure-certs "${{ github.event.inputs.url }}" > "./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}/index.html"
 
       - name: Upload captured webpage as artifact
         uses: actions/upload-artifact@v6
         with:
           name: captured-webpage
-          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
+          path: ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
           retention-days: 30
 
   capture-screenshot:
@@ -69,17 +73,21 @@ jobs:
         run: |
           docker build -t puppeteer-screenshot -f ./puppeteer-screenshot.Dockerfile .
 
+      - name: Set year variable
+        id: set_year
+        run: echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
+
       - name: Capture screenshot with Puppeteer
         run: |
           # create dir in catalog/date/output_filename
-          mkdir -p ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
-          docker run -v "${{ github.workspace }}/catalog:/usr/src/app/catalog" puppeteer-screenshot "${{ github.event.inputs.url }}" "/usr/src/app/catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}/screenshot.png"
+          mkdir -p ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
+          docker run -v "${{ github.workspace }}/catalog:/usr/src/app/catalog" puppeteer-screenshot "${{ github.event.inputs.url }}" "/usr/src/app/catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}/screenshot.png"
 
       - name: Upload screenshot as artifact
         uses: actions/upload-artifact@v6
         with:
           name: captured-screenshot
-          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
+          path: ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
           retention-days: 30
 
   # fetch uploaded artifacts and unzip them and commit to repo
