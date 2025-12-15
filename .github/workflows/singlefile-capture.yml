@@ -112,12 +112,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download captured webpage artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v7
         with:
           name: captured-webpage
           path: ./catalog
       - name: Download captured screenshot artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v7
         with:
           name: captured-screenshot
           path: ./catalog
