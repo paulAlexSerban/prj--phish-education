@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   capture-webpage-html:
+    name: Capture Webpage HTML with SingleFile
     runs-on: ubuntu-latest
     steps:
       - name: Print input values
@@ -41,38 +42,15 @@ jobs:
           mkdir -p ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
           docker run singlefile --browser-ignore-insecure-certs "${{ github.event.inputs.url }}" > "./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}/index.html"
 
-      - name: Extract domain from URL
-        id: extract_domain
-        run: |
-          DOMAIN=$(echo "${{ github.event.inputs.url }}" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
-          echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
-          echo "Extracted domain: $DOMAIN"
-
-      - name: Update index.json
-        run: |
-          YEAR=$(date +%Y)
-          URL="${{ github.event.inputs.url }}"
-          DOMAIN="${{ steps.extract_domain.outputs.domain }}"
-          FILENAME="${{ github.event.inputs.output_filename }}"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          # Read existing index.json
-          INDEX_FILE="./catalog/index.json"
-
-          python3 ./scripts/update_json.py "$INDEX_FILE" "$YEAR" "$URL" "$DOMAIN" "$FILENAME" "$TIMESTAMP"
-
-          # Display updated index.json
-          echo "Updated index.json:"
-          cat "$INDEX_FILE"
-
       - name: Upload captured webpage as artifact
         uses: actions/upload-artifact@v6
         with:
           name: captured-webpage
-          path: ./catalog
+          path: ./catalog/${{ github.event.inputs.output_filename }}
           retention-days: 30
 
   capture-screenshot:
+    name: Capture Screenshot with Puppeteer
     runs-on: ubuntu-latest
     steps:
       - name: Print input values
@@ -101,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: captured-screenshot
-          path: ./catalog
+          path: ./catalog/${{ github.event.inputs.output_filename }}
           retention-days: 30
 
   # fetch uploaded artifacts and unzip them and commit to repo
@@ -118,12 +96,41 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: captured-webpage
-          path: ./catalog
+          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
+          
       - name: Download captured screenshot artifact
         uses: actions/download-artifact@v7
         with:
           name: captured-screenshot
-          path: ./catalog
+          path: ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
+
+      - name: Extract domain from URL
+        id: extract_domain
+        run: |
+          DOMAIN=$(echo "${{ github.event.inputs.url }}" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
+          echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
+          echo "Extracted domain: $DOMAIN"
+
+      - name: Update index.json
+        run: |
+          YEAR=$(date +%Y)
+          URL="${{ github.event.inputs.url }}"
+          DOMAIN="${{ steps.extract_domain.outputs.domain }}"
+          FILENAME="${{ github.event.inputs.output_filename }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Read existing index.json
+          INDEX_FILE="./catalog/index.json"
+
+          python3 ./scripts/update_json.py "$INDEX_FILE" "$YEAR" "$URL" "$DOMAIN" "$FILENAME" "$TIMESTAMP"
+
+          # Display updated index.json
+          echo "Updated index.json:"
+          cat "$INDEX_FILE"
+
+      - name: Generate catalog HTML
+        run: |
+          python3 ./scripts/generate_catalog.py
 
       - name: Commit and push captured data
         run: |
