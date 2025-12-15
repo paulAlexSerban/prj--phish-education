@@ -92,7 +92,7 @@ jobs:
         run: |
           # create dir in catalog/date/output_filename
           mkdir -p ./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}
-          docker run puppeteer-screenshot "${{ github.event.inputs.url }}" "./catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}/screenshot.png"
+          docker run -v "${{ github.workspace }}/catalog:/usr/src/app/catalog" puppeteer-screenshot "${{ github.event.inputs.url }}" "/usr/src/app/catalog/$(date +%Y)/${{ github.event.inputs.output_filename }}/screenshot.png"
 
       - name: Upload screenshot as artifact
         uses: actions/upload-artifact@v6
