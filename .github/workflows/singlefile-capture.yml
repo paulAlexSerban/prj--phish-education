@@ -12,6 +12,9 @@ on:
         required: false
         default: "captured-page"
 
+permissions:
+  contents: write
+
 jobs:
   capture-webpage-html:
     runs-on: ubuntu-latest
