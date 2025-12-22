@@ -1,8 +1,8 @@
 #!/bin/bash
 
-URL="https://roadmap.sh/ai-engineer"
+URL="https://example.com"
 OUTPUT_DIR="catalog"
-OUTPUT_NAME="roadmap-ai-engineer"
+OUTPUT_NAME="example-site"
 
 function build_singlefile_image {
     if [[ "$(docker images -q singlefile 2> /dev/null)" == "" ]]; then
