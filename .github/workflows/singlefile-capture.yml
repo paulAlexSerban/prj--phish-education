@@ -14,6 +14,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   capture-webpage-html:
@@ -25,7 +27,7 @@ jobs:
         run: |
           echo "URL to capture: ${{ github.event.inputs.url }}"
           echo "Output filename: ${{ github.event.inputs.output_filename }}"
-  
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -66,7 +68,7 @@ jobs:
         run: |
           echo "URL to capture: ${{ github.event.inputs.url }}"
           echo "Output filename: ${{ github.event.inputs.output_filename }}"
-  
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -120,7 +122,7 @@ jobs:
         with:
           name: captured-webpage
           path: ./temp-webpage
-          
+
       - name: Download captured screenshot artifact
         continue-on-error: true
         uses: actions/download-artifact@v7
@@ -132,7 +134,7 @@ jobs:
         run: |
           YEAR=$(date +%Y)
           mkdir -p ./catalog/$YEAR/${{ github.event.inputs.output_filename }}
-          
+
           # Move webpage artifact if it exists
           if [ -d "./temp-webpage" ] && [ "$(ls -A ./temp-webpage 2>/dev/null)" ]; then
             mv ./temp-webpage/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
@@ -140,7 +142,7 @@ jobs:
           else
             echo "⚠ No webpage artifact found"
           fi
-          
+
           # Move screenshot artifact if it exists
           if [ -d "./temp-screenshot" ] && [ "$(ls -A ./temp-screenshot 2>/dev/null)" ]; then
             mv ./temp-screenshot/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
@@ -163,7 +165,7 @@ jobs:
           DOMAIN="${{ steps.extract_domain.outputs.domain }}"
           FILENAME="${{ github.event.inputs.output_filename }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
+
           # Check if at least one file was captured
           if [ -f "./catalog/$YEAR/$FILENAME/index.html" ] || [ -f "./catalog/$YEAR/$FILENAME/screenshot.png" ]; then
             # Read existing index.json
@@ -189,15 +191,15 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add ./catalog
-          
+
           # Check if there are changes to commit
           if git diff --staged --quiet; then
             echo "⚠ No changes to commit"
             exit 0
           fi
-          
+
           git commit -m "Add captured webpage and screenshot for ${{ github.event.inputs.url }}"
-          
+
           # Retry push up to 3 times in case of conflicts
           for i in 1 2 3; do
             git push origin HEAD:${{ github.ref }} && break || {
@@ -206,3 +208,27 @@ jobs:
               sleep 2
             }
           done
+
+  deploy-to-gh-pages:
+    name: Deploy Catalog to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: commit-captured-data
+    if: success()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload catalog to Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./catalog
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
