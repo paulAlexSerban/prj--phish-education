@@ -19,6 +19,7 @@ jobs:
   capture-webpage-html:
     name: Capture Webpage HTML with SingleFile
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - name: Print input values
         run: |
@@ -41,21 +42,25 @@ jobs:
         run: echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
 
       - name: Capture webpage HTML, CSS & JS with SingleFile
+        continue-on-error: true
         run: |
           # create dir in catalog/date/output_filename
           mkdir -p ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
-          docker run singlefile --browser-ignore-insecure-certs "${{ github.event.inputs.url }}" > "./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}/index.html"
+          docker run singlefile --browser-ignore-insecure-certs "${{ github.event.inputs.url }}" > "./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}/index.html" || echo "Failed to capture HTML"
 
       - name: Upload captured webpage as artifact
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: captured-webpage
           path: ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
           retention-days: 30
+          if-no-files-found: warn
 
   capture-screenshot:
     name: Capture Screenshot with Puppeteer
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - name: Print input values
         run: |
@@ -78,21 +83,30 @@ jobs:
         run: echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
 
       - name: Capture screenshot with Puppeteer
+        continue-on-error: true
         run: |
           # create dir in catalog/date/output_filename
           mkdir -p ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
-          docker run -v "${{ github.workspace }}/catalog:/usr/src/app/catalog" puppeteer-screenshot "${{ github.event.inputs.url }}" "/usr/src/app/catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}/screenshot.png"
+          # Retry up to 2 times on failure
+          for i in 1 2; do
+            docker run -v "${{ github.workspace }}/catalog:/usr/src/app/catalog" puppeteer-screenshot "${{ github.event.inputs.url }}" "/usr/src/app/catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}/screenshot.png" && break || echo "Attempt $i failed, retrying..."
+            sleep 5
+          done || echo "Failed to capture screenshot after retries"
 
       - name: Upload screenshot as artifact
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: captured-screenshot
           path: ./catalog/${{ steps.set_year.outputs.year }}/${{ github.event.inputs.output_filename }}
           retention-days: 30
+          if-no-files-found: warn
 
   # fetch uploaded artifacts and unzip them and commit to repo
   commit-captured-data:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+    if: always()
     needs:
       - capture-webpage-html
       - capture-screenshot
@@ -101,12 +115,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download captured webpage artifact
+        continue-on-error: true
         uses: actions/download-artifact@v7
         with:
           name: captured-webpage
           path: ./temp-webpage
           
       - name: Download captured screenshot artifact
+        continue-on-error: true
         uses: actions/download-artifact@v7
         with:
           name: captured-screenshot
@@ -116,8 +132,22 @@ jobs:
         run: |
           YEAR=$(date +%Y)
           mkdir -p ./catalog/$YEAR/${{ github.event.inputs.output_filename }}
-          mv ./temp-webpage/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
-          mv ./temp-screenshot/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
+          
+          # Move webpage artifact if it exists
+          if [ -d "./temp-webpage" ] && [ "$(ls -A ./temp-webpage 2>/dev/null)" ]; then
+            mv ./temp-webpage/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
+            echo "✓ Webpage artifact moved"
+          else
+            echo "⚠ No webpage artifact found"
+          fi
+          
+          # Move screenshot artifact if it exists
+          if [ -d "./temp-screenshot" ] && [ "$(ls -A ./temp-screenshot 2>/dev/null)" ]; then
+            mv ./temp-screenshot/* ./catalog/$YEAR/${{ github.event.inputs.output_filename }}/
+            echo "✓ Screenshot artifact moved"
+          else
+            echo "⚠ No screenshot artifact found"
+          fi
 
       - name: Extract domain from URL
         id: extract_domain
@@ -133,24 +163,46 @@ jobs:
           DOMAIN="${{ steps.extract_domain.outputs.domain }}"
           FILENAME="${{ github.event.inputs.output_filename }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Check if at least one file was captured
+          if [ -f "./catalog/$YEAR/$FILENAME/index.html" ] || [ -f "./catalog/$YEAR/$FILENAME/screenshot.png" ]; then
+            # Read existing index.json
+            INDEX_FILE="./catalog/index.json"
 
-          # Read existing index.json
-          INDEX_FILE="./catalog/index.json"
+            python3 ./scripts/update_json.py "$INDEX_FILE" "$YEAR" "$URL" "$DOMAIN" "$FILENAME" "$TIMESTAMP"
 
-          python3 ./scripts/update_json.py "$INDEX_FILE" "$YEAR" "$URL" "$DOMAIN" "$FILENAME" "$TIMESTAMP"
-
-          # Display updated index.json
-          echo "Updated index.json:"
-          cat "$INDEX_FILE"
+            # Display updated index.json
+            echo "Updated index.json:"
+            cat "$INDEX_FILE"
+          else
+            echo "⚠ No files were captured, skipping index.json update"
+            exit 1
+          fi
 
       - name: Generate catalog HTML
+        continue-on-error: true
         run: |
-          python3 ./scripts/generate_catalog.py
+          python3 ./scripts/generate_catalog.py || echo "⚠ Failed to generate catalog HTML"
 
       - name: Commit and push captured data
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add ./catalog
-          git commit -m "Add captured webpage and screenshot for ${{ github.event.inputs.url }}" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref }}
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "⚠ No changes to commit"
+            exit 0
+          fi
+          
+          git commit -m "Add captured webpage and screenshot for ${{ github.event.inputs.url }}"
+          
+          # Retry push up to 3 times in case of conflicts
+          for i in 1 2 3; do
+            git push origin HEAD:${{ github.ref }} && break || {
+              echo "Push attempt $i failed, pulling and retrying..."
+              git pull --rebase origin ${{ github.ref }}
+              sleep 2
+            }
+          done
