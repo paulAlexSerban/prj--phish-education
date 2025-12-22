@@ -1,6 +1,15 @@
 [
     {
         "year": 2025,
+        "url": "https://example.com",
+        "domain": "example.com",
+        "filename": "examplesite",
+        "description": "Phishing page captured from example.com",
+        "capturedAt": "2025-12-22T13:49:50Z",
+        "path": "2025/examplesite/index.html"
+    },
+    {
+        "year": 2025,
         "url": "https://topshelfaudience.com",
         "domain": "topshelfaudience.com",
         "filename": "topshelfaudience",
