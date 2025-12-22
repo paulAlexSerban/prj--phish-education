@@ -1,6 +1,15 @@
 [
     {
         "year": 2025,
+        "url": "https://tidbuy.com",
+        "domain": "tidbuy.com",
+        "filename": "tidbuy",
+        "description": "Phishing page captured from tidbuy.com",
+        "capturedAt": "2025-12-22T12:28:42Z",
+        "path": "2025/tidbuy/index.html"
+    },
+    {
+        "year": 2025,
         "url": "https://scoala-ski-snowboard.ro",
         "domain": "scoala-ski-snowboard.ro",
         "filename": "scoala-ski-snowboard",
